@@ -1,0 +1,6 @@
+body { margin:0; font-family:Arial; background:#f8f8f8; }
+.navbar { background:#fc8019; padding:15px 50px; display:flex; justify-content:space-between; color:white; }
+.navbar a { color:white; margin-left:20px; text-decoration:none; }
+.card { background:white; padding:15px; border-radius:10px; width:220px; box-shadow:0 0 10px #ddd; }
+.cards { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:40px; }
+button { background:#fc8019; border:none; padding:10px; color:white; cursor:pointer; }

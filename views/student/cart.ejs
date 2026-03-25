@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Cart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-10">
+
+<h2 class="text-2xl font-bold mb-6">🛒 Your Cart</h2>
+
+<% if(!cart || cart.length === 0){ %>
+
+    <p class="text-gray-500">Cart is empty</p>
+
+<% } else { %>
+
+    <% let total = 0; %>
+
+    <div class="space-y-4">
+
+        <% cart.forEach(item => { %>
+
+            <% total += item.price * item.quantity; %>
+
+            <div class="bg-white p-4 rounded shadow flex justify-between">
+                <div>
+                    <h3 class="font-semibold"><%= item.name %></h3>
+                    <p>Qty: <%= item.quantity %></p>
+                </div>
+
+                <div class="font-bold">
+                    ₹<%= item.price * item.quantity %>
+                </div>
+            </div>
+
+        <% }) %>
+
+    </div>
+
+    <div class="mt-6 bg-white p-4 rounded shadow">
+        <p class="text-xl font-bold mb-4">
+            Total: ₹<%= total %>
+        </p>
+
+        <form action="/student/order" method="POST">
+            <input type="time"
+                   name="pickupTime"
+                   required
+                   class="border p-2 rounded w-full mb-3">
+
+            <button class="bg-green-600 text-white px-4 py-2 rounded w-full">
+                Place Order
+            </button>
+        </form>
+    </div>
+
+<% } %>
+
+<br>
+<a href="/student/dashboard" class="text-blue-600">⬅ Back to Dashboard</a>
+
+</body>
+</html>

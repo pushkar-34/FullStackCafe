@@ -1,0 +1,25 @@
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-6">📦 Your Orders</h1>
+
+<% orders.forEach(order => { %>
+
+<div class="bg-white p-5 rounded-xl shadow mb-4">
+
+  <h2 class="font-bold text-lg"><%= order.foodName %></h2>
+  <p>₹ <%= order.price %></p>
+
+  <div class="mt-3">
+    <span class="px-3 py-1 rounded-full text-white
+      <%= order.status === 'Pending' ? 'bg-yellow-500' :
+          order.status === 'Completed' ? 'bg-green-500' :
+          'bg-red-500' %>">
+      <%= order.status %>
+    </span>
+  </div>
+
+</div>
+
+<% }) %>
+
+</body>

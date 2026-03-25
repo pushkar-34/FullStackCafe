@@ -1,0 +1,31 @@
+<%- include('../partials/header') %>
+
+<h2 class="text-2xl font-bold">Wallet Balance: ₹<%= wallet.balance %></h2>
+
+<form method="POST" action="/wallet/add" class="mt-4">
+  <input type="number" name="amount" placeholder="Enter amount"
+    class="border p-2">
+  <button class="bg-green-500 text-white px-4 py-2 rounded">
+    Add Money
+  </button>
+</form>
+
+<h3 class="mt-6 font-bold">Transactions</h3>
+
+<table class="w-full mt-3 bg-white shadow rounded">
+  <tr class="bg-gray-200">
+    <th class="p-2">Type</th>
+    <th>Amount</th>
+    <th>Date</th>
+  </tr>
+
+  <% transactions.forEach(t => { %>
+    <tr class="text-center">
+      <td class="p-2"><%= t.type %></td>
+      <td>₹<%= t.amount %></td>
+      <td><%= t.createdAt.toDateString() %></td>
+    </tr>
+  <% }) %>
+</table>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-6">🍽 Manage Menu</h1>
+
+<a href="/admin/dashboard" class="text-blue-600 underline">← Back</a>
+
+
+<div class="bg-white p-6 rounded shadow mt-6">
+    <h2 class="text-xl font-semibold mb-4">Add New Item</h2>
+
+    <form action="/admin/add-menu" method="POST" enctype="multipart/form-data" class="space-y-4">
+
+        <input type="text" name="name" placeholder="Item Name"
+            class="w-full border p-2 rounded" required>
+
+        <input type="number" name="price" placeholder="Price"
+            class="w-full border p-2 rounded" required>
+
+        <input type="file" name="image" class="w-full border p-2 rounded" required>
+
+        <label class="flex items-center space-x-2">
+            <input type="checkbox" name="inStock" checked>
+            <span>In Stock</span>
+        </label>
+
+        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Add Item
+        </button>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded shadow mt-6">
+    <h2 class="text-xl font-semibold mb-4">All Menu Items</h2>
+
+    <% if(menu.length === 0){ %>
+        <p>No items added yet.</p>
+    <% } else { %>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <% menu.forEach(item => { %>
+
+            <div class="border rounded p-4 shadow">
+                <% if(item.image){ %>
+                    <img src="<%= item.image %>" 
+                        class="w-full h-40 object-cover rounded mb-3">
+                <% } %>
+
+                <h3 class="text-lg font-semibold"><%= item.name %></h3>
+                <p class="text-gray-600">₹<%= item.price %></p>
+
+                <% if(item.inStock){ %>
+                    <p class="text-green-600 font-semibold">In Stock</p>
+                <% } else { %>
+                    <p class="text-red-600 font-semibold">Out of Stock</p>
+                <% } %>
+
+            </div>
+
+        <% }) %>
+        </div>
+
+    <% } %>
+</div>
+
+</body>
+</html>

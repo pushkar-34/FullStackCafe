@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-6">My Orders</h1>
+
+<div class="bg-white p-6 rounded shadow">
+    <% orders.forEach(order => { %>
+
+    <p><strong>Student:</strong>
+        <%= order.student ? order.student.name : "Unknown" %>
+    </p>
+
+    <p><strong>Products:</strong></p>
+    <ul>
+        <% order.items.forEach(item => { %>
+            <li>
+                <%= item.menu ? item.menu.name : "Deleted Item" %>
+                (Qty: <%= item.quantity %>)
+            </li>
+        <% }) %>
+    </ul>
+
+    <p>Total: ₹<%= order.totalAmount %></p>
+    <p>Status: <%= order.status %></p>
+
+<% }) %>
+
+</div>
+
+</body>
+</html>
