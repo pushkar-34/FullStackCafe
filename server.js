@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const morgan = require("morgan");
 const Menu = require("./models/Menu");
+const Notification = require("./models/Notification");
 
 const app = express();
 
@@ -24,12 +25,24 @@ app.use(session({
     saveUninitialized: false
 }));
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     res.locals.user = req.session.userId || null;
     res.locals.role = req.session.role || null;
     res.locals.userName = req.session.userName || null;
     res.locals.userProfilePic = req.session.userProfilePic || null;
     res.locals.cart = req.session.cart || [];
+
+    if (req.session.userId) {
+        try {
+            res.locals.notifications = await Notification.find({ userId: req.session.userId }).sort({ createdAt: -1 }).limit(5);
+        } catch (err) {
+            console.error("Notification Error:", err);
+            res.locals.notifications = [];
+        }
+    } else {
+        res.locals.notifications = [];
+    }
+    
     next();
 });
 

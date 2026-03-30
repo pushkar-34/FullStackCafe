@@ -50,6 +50,23 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100 shadow-sm border-danger">
+                    <div class="card-body">
+                        <h3 class="card-title"><i class="fas fa-fire-burner text-danger mb-3" style="font-size: 2rem;"></i><br>Kitchen</h3>
+                        <p class="card-text display-6"><%= pendingOrderCount %></p>
+                        <div class="text-start mb-3 small bg-light p-2 rounded">
+                            <strong>Preparation Summary:</strong>
+                            <ul class="list-unstyled mb-0 mt-1">
+                                <% for (const [item, qty] of Object.entries(kitchenView)) { %>
+                                    <li><span class="badge bg-danger rounded-pill"><%= qty %></span> <%= item %></li>
+                                <% } %>
+                            </ul>
+                        </div>
+                        <a href="/admin/kitchen" class="btn btn-danger w-100">Open Kitchen View</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>

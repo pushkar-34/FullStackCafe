@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require('../models/Order');
 const Menu = require('../models/Menu');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -30,40 +31,109 @@ router.use((req, res, next) => {
 });
 
 router.get('/', async (req, res) => {
-    const orderCount = await Order.countDocuments();
-    const userCount = await User.countDocuments();
-    const productCount = await Menu.countDocuments();
-    
-    res.render('admin/dashboard', { 
-        orderCount, userCount, productCount,
-        userName: req.session.userName || null, 
-        userProfilePic: req.session.userProfilePic || null 
-    });
+    try {
+        const [orderCount, userCount, productCount, pendingOrders] = await Promise.all([
+            Order.countDocuments(),
+            User.countDocuments(),
+            Menu.countDocuments(),
+            Order.find({ status: 'Pending' })
+        ]);
+
+        const pendingOrderCount = pendingOrders.length;
+        const kitchenView = {};
+        
+        pendingOrders.forEach(order => {
+            order.items.forEach(item => {
+                if (item.name) {
+                    kitchenView[item.name] = (kitchenView[item.name] || 0) + item.quantity;
+                }
+            });
+        });
+
+        res.render('admin/dashboard', { 
+            orderCount, userCount, productCount, pendingOrderCount,
+            kitchenView,
+            userName: req.session.userName || null, 
+            userProfilePic: req.session.userProfilePic || null 
+        });
+    } catch (err) {
+        console.error("Admin Dashboard Error:", err);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+router.get('/kitchen', async (req, res) => {
+    try {
+        const pendingOrders = await Order.find({ status: 'Pending' })
+            .populate('user', 'name email')
+            .sort({ createdAt: 1 });
+
+        const kitchenView = {};
+        pendingOrders.forEach(order => {
+            order.items.forEach(item => {
+                if (item.name) {
+                    kitchenView[item.name] = (kitchenView[item.name] || 0) + item.quantity;
+                }
+            });
+        });
+
+        res.render('admin/kitchen', { 
+            pendingOrders, 
+            kitchenView,
+            userName: req.session.userName || null, 
+            userProfilePic: req.session.userProfilePic || null 
+        });
+    } catch (err) {
+        console.error("Error in Kitchen Dashboard:", err);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
 router.get('/orders', async (req, res) => {
-    const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
-    res.render('admin/orders', { orders, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    try {
+        const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
+        res.render('admin/orders', { orders, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching orders");
+    }
 });
 
 router.get('/users', async (req, res) => {
-    const users = await User.find();
-    res.render('admin/users', { users, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    try {
+        const users = await User.find();
+        res.render('admin/users', { users, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching users");
+    }
 });
 
 router.get('/products', async (req, res) => {
-    const menu = await Menu.find().sort({ createdAt: -1 });
-    res.render('admin/products', { menu, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    try {
+        const menu = await Menu.find().sort({ createdAt: -1 });
+        res.render('admin/products', { menu, userName: req.session.userName || null, userProfilePic: req.session.userProfilePic || null });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching products");
+    }
 });
 
 router.post('/order/status', async (req, res) => {
     const { orderId, status } = req.body;
     try {
-        await Order.findByIdAndUpdate(orderId, { status });
+        const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+        
+        if (status === 'Completed' && order) {
+            await Notification.create({
+                userId: order.user,
+                message: `Your order is ready! Please collect it from the counter.`
+            });
+        }
     } catch (err) {
         console.error(err);
     }
-    res.redirect('/admin/orders');
+    res.redirect(req.header('Referer') || '/admin/orders');
 });
 
 router.post('/menu/add', upload.single('image'), async (req, res) => {
