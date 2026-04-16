@@ -6,6 +6,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Cart = require('../models/Cart');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'pushkarsheoran277@gmail.com',
+        pass: 'gjpd gaop udmv zpaw'
+    }
+});
 
 
 const uploadDir = path.join(__dirname, '../public/uploads/profiles');
@@ -108,14 +117,115 @@ router.post('/register', upload.single('profilePic'), async (req, res) => {
             return res.render('register', { error: 'Email already exists' });
         }
         
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const hashedPassword = await bcrypt.hash(password, 10);
-        await User.create({ name, email, password: hashedPassword, role: 'student', profilePic });
-        res.redirect('/login');
+        
+        req.session.tempUser = { name, email, password: hashedPassword, profilePic, otp };
+
+        const mailOptions = {
+            from: 'pushkarsheoran277@gmail.com',
+            to: email,
+            subject: 'Canteen Café - Verify Your Account',
+            html: `<h3>Welcome to Canteen Café!</h3><p>Your OTP for registration is: <strong>${otp}</strong></p>`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error("Mail Error:", error);
+                return res.render('register', { error: 'Failed to send OTP. Please try again.' });
+            }
+            res.redirect('/verify-otp');
+        });
     } catch (err) {
         console.error(err);
         res.render('register', { error: 'Error registering user' });
     }
 });
 
+router.get('/verify-otp', (req, res) => {
+    if (!req.session.tempUser) return res.redirect('/register');
+    res.render('verify-otp', { error: null });
+});
+
+router.post('/verify-otp', async (req, res) => {
+    const { otp } = req.body;
+    const tempUser = req.session.tempUser;
+
+    if (!tempUser) return res.redirect('/register');
+
+    if (otp === tempUser.otp) {
+        try {
+            await User.create({ 
+                name: tempUser.name, 
+                email: tempUser.email, 
+                password: tempUser.password, 
+                role: 'student', 
+                profilePic: tempUser.profilePic 
+            });
+            delete req.session.tempUser;
+            res.redirect('/login');
+        } catch (err) {
+            console.error(err);
+            res.render('verify-otp', { error: 'Error creating user' });
+        }
+    } else {
+        res.render('verify-otp', { error: 'Invalid OTP code' });
+    }
+});
+
+router.get('/forgot-password', (req, res) => {
+    res.render('forgot-password', { error: null });
+});
+
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.render('forgot-password', { error: 'No account found with that email address.' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        req.session.resetEmail = email;
+        req.session.resetOtp = otp;
+
+        const mailOptions = {
+            from: 'pushkarsheoran277@gmail.com',
+            to: email,
+            subject: 'Canteen Café - Password Reset OTP',
+            html: `<h3>Password Reset Request</h3>
+                   <p>You requested a password reset. Your verification code is: <strong>${otp}</strong></p>
+                   <p>If you did not request this, please ignore this email.</p>`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error("Mail Error:", error);
+                return res.render('forgot-password', { error: 'Failed to send reset code. Try again.' });
+            }
+            res.redirect('/reset-password');
+        });
+    } catch (err) {
+        res.render('forgot-password', { error: 'An error occurred. Please try again.' });
+    }
+});
+
+router.get('/reset-password', (req, res) => {
+    if (!req.session.resetEmail) return res.redirect('/forgot-password');
+    res.render('reset-password', { error: null });
+});
+
+router.post('/reset-password', async (req, res) => {
+    const { otp, newPassword } = req.body;
+    if (otp === req.session.resetOtp) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await User.findOneAndUpdate({ email: req.session.resetEmail }, { password: hashedPassword });
+        delete req.session.resetOtp;
+        delete req.session.resetEmail;
+        res.redirect('/login');
+    } else {
+        res.render('reset-password', { error: 'Invalid OTP code' });
+    }
+});
 
 module.exports = router;

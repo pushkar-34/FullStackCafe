@@ -124,10 +124,20 @@ router.post('/order/status', async (req, res) => {
     try {
         const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
         
-        if (status === 'Completed' && order) {
+        if (order) {
+            const msg = status === 'Completed' 
+                ? `Your order is ready! Please collect it from the counter.` 
+                : `Your order status has been updated to: ${status}`;
+
             await Notification.create({
                 userId: order.user,
-                message: `Your order is ready! Please collect it from the counter.`
+                message: msg
+            });
+
+            const io = req.app.get('io');
+            io.to(order.user.toString()).emit('orderUpdate', {
+                message: msg,
+                status: status
             });
         }
     } catch (err) {

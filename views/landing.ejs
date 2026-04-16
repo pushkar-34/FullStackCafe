@@ -58,6 +58,21 @@
         <div class="container">
             <h1 class="display-4 fw-bold">Fresh Food, Fast Service</h1>
             <p class="lead mb-4">Order your favorite meals online and skip the queue!</p>
+            
+            <!-- Search Bar -->
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-6">
+                    <form action="/" method="GET" class="input-group shadow">
+                        <input type="text" name="search" id="searchInput" class="form-control form-control-lg" 
+                               placeholder="Search for food..." autocomplete="off" 
+                               value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>" list="searchSuggestions">
+                        <datalist id="searchSuggestions"></datalist>
+                        <input type="hidden" name="category" value="<%= currentCategory %>">
+                        <button class="btn btn-dark btn-lg" type="submit"><i class="fas fa-search"></i></button>
+                    </form>
+                </div>
+            </div>
+
             <% if (!user) { %>
                 <a href="/register" class="btn btn-light btn-lg px-4 me-2">Get Started</a>
             <% } %>
@@ -69,9 +84,9 @@
             <h2 class="text-center mb-5 fw-bold text-primary" style="letter-spacing: 1px;">Our Menu</h2>
             <% if (allCategories) { %>
                 <div class="text-center mb-5">
-                    <a href="/" class="btn <%= !currentCategory || currentCategory === 'all' ? 'btn-primary' : 'btn-outline-primary' %>">All</a>
+                    <a href="/?category=all&search=<%= encodeURIComponent(currentSearch || '') %>" class="btn <%= !currentCategory || currentCategory === 'all' ? 'btn-primary' : 'btn-outline-primary' %>">All</a>
                     <% allCategories.forEach(category => { %>
-                        <a href="/?category=<%= encodeURIComponent(category) %>" class="btn <%= currentCategory === category ? 'btn-primary' : 'btn-outline-primary' %>"><%= category %></a>
+                        <a href="/?category=<%= encodeURIComponent(category) %>&search=<%= encodeURIComponent(currentSearch || '') %>" class="btn <%= currentCategory === category ? 'btn-primary' : 'btn-outline-primary' %> text-capitalize"><%= category %></a>
                     <% }) %>
                 </div>
             <% } %>
@@ -127,11 +142,12 @@
             <% } %>
 
             <% if (locals.totalPages && totalPages > 1) { %>
+                <% const searchQuery = typeof currentSearch !== 'undefined' && currentSearch ? `search=${encodeURIComponent(currentSearch)}&` : ''; %>
                 <% const categoryQuery = currentCategory && currentCategory !== 'all' ? `category=${encodeURIComponent(currentCategory)}&` : ''; %>
                 <nav aria-label="Page navigation" class="mt-5">
                     <ul class="pagination justify-content-center">
                         <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="<%= currentPage === 1 ? '#' : `/?${categoryQuery}page=${currentPage - 1}` %>">Previous</a>
+                            <a class="page-link" href="<%= currentPage === 1 ? '#' : `/?${searchQuery}${categoryQuery}page=${currentPage - 1}` %>">Previous</a>
                         </li>
 
                         <% 
@@ -142,7 +158,7 @@
                         if (currentPage >= totalPages - 2) startPage = Math.max(1, totalPages - 4);
 
                         if (startPage > 1) { %>
-                            <li class="page-item"><a class="page-link" href="/?<%= categoryQuery %>page=1">1</a></li>
+                            <li class="page-item"><a class="page-link" href="/?<%= searchQuery %><%= categoryQuery %>page=1">1</a></li>
                             <% if (startPage > 2) { %>
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
                             <% } %>
@@ -150,7 +166,7 @@
 
                         <% for(let i = startPage; i <= endPage; i++) { %>
                             <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                <a class="page-link" href="/?<%= categoryQuery %>page=<%= i %>"><%= i %></a>
+                                <a class="page-link" href="/?<%= searchQuery %><%= categoryQuery %>page=<%= i %>"><%= i %></a>
                             </li>
                         <% } %>
 
@@ -158,11 +174,11 @@
                             <% if (endPage < totalPages - 1) { %>
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
                             <% } %>
-                            <li class="page-item"><a class="page-link" href="/?<%= categoryQuery %>page=<%= totalPages %>"><%= totalPages %></a></li>
+                            <li class="page-item"><a class="page-link" href="/?<%= searchQuery %><%= categoryQuery %>page=<%= totalPages %>"><%= totalPages %></a></li>
                         <% } %>
 
                         <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="<%= currentPage === totalPages ? '#' : `/?${categoryQuery}page=${Number(currentPage) + 1}` %>">Next</a>
+                            <a class="page-link" href="<%= currentPage === totalPages ? '#' : `/?${searchQuery}${categoryQuery}page=${Number(currentPage) + 1}` %>">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -196,6 +212,24 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Character Suggestion Logic
+            const searchInput = document.getElementById('searchInput');
+            const suggestionsList = document.getElementById('searchSuggestions');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', async (e) => {
+                    const query = e.target.value;
+                    if (query.length < 1) return;
+                    try {
+                        const res = await fetch(`/api/search-suggestions?term=${encodeURIComponent(query)}`);
+                        const data = await res.json();
+                        suggestionsList.innerHTML = data.map(name => `<option value="${name}">`).join('');
+                    } catch (err) {
+                        console.error('Error fetching suggestions:', err);
+                    }
+                });
+            }
+
             
             document.querySelectorAll('.quantity-plus').forEach(button => {
                 button.addEventListener('click', function() {
